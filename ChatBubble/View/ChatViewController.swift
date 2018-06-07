@@ -26,9 +26,8 @@ class ChatViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
-        KeyboardNotificationController.sharedKC.registerforKeyBoardNotification(delegate: self)
-        addOnTapDismissKeyboard()
-        chatviewmodel = ChatViewModel(view: self)
+        setUpInitializers()
+        navigationItem.title = "Chats"
     }
     
     deinit {
@@ -43,12 +42,58 @@ class ChatViewController: UIViewController {
 
 extension ChatViewController: KeyBoardNotificationDelegate,UITableViewDataSource,ChatViewControllerDelegate
 {
+    
+    //MARK: - Custom Accessors
+    
+    fileprivate func setUpInitializers()
+    {
+        KeyboardNotificationController.sharedKC.registerforKeyBoardNotification(delegate: self)
+        addOnTapDismissKeyboard()
+        chatviewmodel = ChatViewModel(view: self)
+    }
+    
+    fileprivate func scrollToBottom(){
+        DispatchQueue.main.async {
+            let indexPath = IndexPath(row: (self.chatviewmodel?.chats.count)!-1, section: 0)
+            self.chatTable.scrollToRow(at: indexPath, at: .bottom, animated: true)
+        }
+    }
+    
+    fileprivate func addOnTapDismissKeyboard() {
+        
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(self.dismissKeyboard (_:)))
+        self.view.addGestureRecognizer(tapGesture)
+        print("**************Table view didSelect maynot work!!!!!!!!!!!!!!!")
+    }
+    
+    @objc func dismissKeyboard (_ sender: UITapGestureRecognizer) {
+        self.view.endEditing(true)
+    }
+    
+    fileprivate func addChat()
+    {
+        chatviewmodel?.newchat = chatTXT.text
+        chatviewmodel?.onItemAdded()
+        chatTXT.text = ""
+    }
+    
+    //MARK: - ChatViewControllerDelegate
+    
     func didNewChatMessagesRecieved() {
         chatTable.reloadData()
         scrollToBottom()
     }
     
+    //MARK: - KeyBoardNotificationDelegate
     
+    func didKeyBoardAppeared(keyboardHeight: CGFloat) {
+        
+        self.chatTXTBottomConstraint.constant = (keyboardHeight == 0) ? 0 : -keyboardHeight
+        chatTable.reloadData()
+        scrollToBottom()
+    }
+
+
     //MARK: - UITableViewDataSource
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -74,43 +119,6 @@ extension ChatViewController: KeyBoardNotificationDelegate,UITableViewDataSource
         }
         
         return cell
-    }
-    
-    
-    //MARK: - KeyBoardNotificationDelegate
-    
-    func didKeyBoardAppeared(keyboardHeight: CGFloat) {
-        
-        self.chatTXTBottomConstraint.constant = (keyboardHeight == 0) ? 0 : -keyboardHeight
-        chatTable.reloadData()
-        scrollToBottom()
-    }
-    
-    //MARK: - Custom Accessors
-    
-    func scrollToBottom(){
-        DispatchQueue.main.async {
-            let indexPath = IndexPath(row: (self.chatviewmodel?.chats.count)!-1, section: 0)
-            self.chatTable.scrollToRow(at: indexPath, at: .bottom, animated: true)
-        }
-    }
-    
-    fileprivate func addOnTapDismissKeyboard() {
-        
-        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(self.dismissKeyboard (_:)))
-        self.view.addGestureRecognizer(tapGesture)
-        print("**************Table view didSelect maynot work!!!!!!!!!!!!!!!")
-    }
-    
-    @objc func dismissKeyboard (_ sender: UITapGestureRecognizer) {
-        self.view.endEditing(true)
-    }
-    
-    fileprivate func addChat()
-    {
-        chatviewmodel?.newchat = chatTXT.text
-        chatviewmodel?.onItemAdded()
-        chatTXT.text = ""
     }
     
     //MARK: - IBAction
